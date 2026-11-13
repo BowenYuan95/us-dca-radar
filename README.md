@@ -164,6 +164,8 @@ python3 scripts/dashboard.py --serve --open # 面板 + 执行窗口记账
 └── README.md
 ```
 
+> 本仓库刻意不提交 `data/`、`reports/`、`dashboard/index.html`（个人台账、缓存和生成物，已在 `.gitignore` 中忽略）；首次运行会自动创建。
+
 ---
 
 ## 七、可视化面板
