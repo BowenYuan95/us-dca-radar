@@ -1,0 +1,11 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+*.sqlite
+*.sqlite-*
+.exec_token
+data/
+reports/
+dashboard/index.html
+dashboard/preview.png
+verify/raw/

@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>美股定投雷达 · VOO / SMH / TSLA</title>
+<style>
+  :root{
+    --bg:#070b14; --card:#101827; --card2:#141f33; --line:rgba(255,255,255,.075);
+    --txt:#e8eefb; --muted:#8b9ab3; --dim:#5f6f8a;
+    --green:#2dd4a7; --green2:#0f3b31; --red:#f87171; --amber:#fbbf24; --amber2:#3a2c0e;
+    --blue:#60a5fa; --violet:#c084fc; --pink:#f472b6; --slate:#94a3b8;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; color:var(--txt);
+    background:
+      radial-gradient(1100px 560px at 12% -12%, rgba(37,64,110,.55) 0%, transparent 62%),
+      radial-gradient(900px 520px at 105% -5%, rgba(76,42,120,.45) 0%, transparent 58%),
+      var(--bg);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased; font-variant-numeric:tabular-nums;
+    min-height:100vh;
+  }
+  .wrap{max-width:1240px;margin:0 auto;padding:26px 22px 46px;overflow-x:hidden}
+  a{color:var(--blue);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* ---------- header ---------- */
+  header.top{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap;margin-bottom:22px}
+  .brand{display:flex;align-items:center;gap:12px}
+  .logo{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;
+    background:linear-gradient(145deg,#1b2b4d,#0e1626);border:1px solid var(--line);font-size:21px}
+  h1{margin:0;font-size:22px;letter-spacing:.5px;font-weight:700}
+  .sub{margin-top:3px;font-size:12.5px;color:var(--muted);letter-spacing:.4px}
+  .topmeta{text-align:right;font-size:12.5px;color:var(--muted);line-height:1.75}
+  .topmeta b{color:var(--txt);font-weight:600}
+  .market-pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;
+    font-size:11.5px;background:rgba(45,212,167,.11);color:var(--green);border:1px solid rgba(45,212,167,.28)}
+  .market-pill.closed{background:rgba(148,163,184,.1);color:var(--slate);border-color:rgba(148,163,184,.25)}
+  .dot{width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 8px currentColor}
+
+  /* ---------- hero ---------- */
+  .hero{background:linear-gradient(135deg,rgba(24,38,64,.92),rgba(17,25,42,.92));
+    border:1px solid var(--line);border-radius:20px;padding:22px 24px;margin-bottom:18px;
+    display:flex;justify-content:space-between;gap:22px;flex-wrap:wrap;position:relative;overflow:hidden}
+  .hero:before{content:"";position:absolute;right:-60px;top:-80px;width:260px;height:260px;border-radius:50%;
+    background:radial-gradient(circle,rgba(96,165,250,.16),transparent 68%)}
+  .hero .label{font-size:12px;letter-spacing:2px;color:var(--dim);text-transform:uppercase}
+  .hero h2{margin:6px 0 8px;font-size:25px;line-height:1.35;font-weight:700}
+  .hero h2 em{font-style:normal;color:var(--green)}
+  .hero .desc{font-size:13px;color:var(--muted);line-height:1.7;max-width:660px}
+  .hero .desc code{background:rgba(255,255,255,.06);padding:1px 7px;border-radius:6px;font-size:12px;color:#cbd5e1}
+  .hero-side{text-align:right;min-width:190px;display:flex;flex-direction:column;gap:8px;justify-content:center}
+  .big-num{font-size:26px;font-weight:700}
+  .hero-side .cap{font-size:12px;color:var(--muted)}
+  .chips{display:flex;gap:7px;justify-content:flex-end;flex-wrap:wrap}
+  .chip{padding:3px 9px;border-radius:999px;font-size:11.5px;border:1px solid var(--line);color:var(--muted);background:rgba(255,255,255,.03)}
+  .chip.ok{color:var(--green);border-color:rgba(45,212,167,.3);background:rgba(45,212,167,.08)}
+  .chip.miss{color:var(--dim)}
+
+  /* ---------- section titles ---------- */
+  .sec-title{display:flex;align-items:baseline;gap:10px;margin:24px 2px 12px}
+  .sec-title h3{margin:0;font-size:14.5px;letter-spacing:1px;font-weight:600}
+  .sec-title span{font-size:12px;color:var(--dim)}
+
+  /* ---------- cards ---------- */
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(318px,1fr));gap:16px}
+  .card{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--line);
+    border-radius:20px;padding:19px 20px 17px;position:relative;overflow:hidden}
+  .card:after{content:"";position:absolute;inset:0 0 auto 0;height:3px;
+    background:linear-gradient(90deg,var(--acc),transparent 78%);opacity:.85}
+  .card.voo{--acc:#60a5fa}.card.smh{--acc:#2dd4a7}.card.tsla{--acc:#f472b6}
+  .card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  .sym{font-size:19px;font-weight:700;letter-spacing:.6px}
+  .sym small{display:block;font-size:11.5px;color:var(--muted);font-weight:400;letter-spacing:0;margin-top:2px}
+  .badge{padding:5px 11px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap;border:1px solid transparent}
+  .v-buy{background:rgba(45,212,167,.13);color:var(--green);border-color:rgba(45,212,167,.3)}
+  .v-partial{background:rgba(251,191,36,.13);color:var(--amber);border-color:rgba(251,191,36,.3)}
+  .v-wait{background:rgba(148,163,184,.11);color:var(--slate);border-color:rgba(148,163,184,.24)}
+  .v-done{background:rgba(96,165,250,.13);color:var(--blue);border-color:rgba(96,165,250,.3)}
+  .v-defer{background:rgba(251,191,36,.10);color:#fbbf24;border-color:rgba(251,191,36,.26)}
+  .price-row{display:flex;align-items:flex-end;gap:10px;margin:14px 0 4px}
+  .price{font-size:32px;font-weight:700;letter-spacing:-.5px;line-height:1}
+  .chg{font-size:13px;font-weight:600;padding:2px 8px;border-radius:7px;margin-bottom:3px}
+  .chg.up{color:var(--green);background:rgba(45,212,167,.1)}
+  .chg.down{color:var(--red);background:rgba(248,113,113,.1)}
+  .mini-row{font-size:11.5px;color:var(--dim);margin-bottom:12px}
+  .gauge-wrap{display:flex;gap:14px;align-items:center;margin:4px 0 10px}
+  .gauge{width:98px;height:98px;flex:none}
+  .gauge-num{fill:var(--txt);font-size:25px;font-weight:700}
+  .gauge-lbl{fill:var(--muted);font-size:10px;letter-spacing:1.5px}
+  .gauge-side{flex:1;min-width:0}
+  .gauge-side .vtext{font-size:12.5px;color:var(--muted);line-height:1.55;margin-bottom:8px;max-height:56px;overflow:hidden}
+  .prog{height:7px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden}
+  .prog i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#2dd4a7,#60a5fa)}
+  .prog-cap{display:flex;justify-content:space-between;font-size:11px;color:var(--dim);margin-top:6px}
+  .metrics{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 2px}
+  .m{font-size:11px;color:var(--muted);background:rgba(255,255,255,.035);border:1px solid var(--line);
+    padding:3px 8px;border-radius:8px;white-space:nowrap}
+  .m b{color:var(--txt);font-weight:600;margin-left:3px}
+  .trigger{font-size:11.5px;color:var(--dim);margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);line-height:1.6}
+  .trigger b{color:var(--amber);font-weight:600}
+
+  /* ---------- panels ---------- */
+  .grid2{display:grid;grid-template-columns:1.15fr .85fr;gap:16px;margin-top:18px}
+  .grid2>*,.cards>*,.panel,.card,.hero>div{min-width:0}
+  @media(max-width:880px){.grid2{grid-template-columns:1fr}}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px 20px;margin-top:18px}
+  .panel h4{margin:0 0 4px;font-size:13.5px;letter-spacing:.6px;font-weight:600}
+  .panel .hint{font-size:11.5px;color:var(--dim);margin-bottom:14px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{text-align:left;font-weight:500;color:var(--dim);font-size:11px;letter-spacing:.8px;padding:0 8px 8px 0;border-bottom:1px solid var(--line)}
+  td{padding:9px 8px 9px 0;border-bottom:1px solid rgba(255,255,255,.045);color:var(--muted)}
+  td:first-child{color:var(--txt);font-weight:600}
+  td.num{color:var(--txt)}
+  .drift-up{color:var(--amber)} .drift-ok{color:var(--green)}
+  .mini-prog{height:5px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden;width:86px;display:inline-block;vertical-align:middle;margin-right:7px}
+  .mini-prog i{display:block;height:100%;background:var(--green)}
+  .legend{display:flex;gap:16px;font-size:11.5px;color:var(--muted);flex-wrap:wrap;margin-bottom:6px}
+  .legend i{display:inline-block;width:9px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
+  svg.chart{width:100%;height:auto;display:block}
+  .charts3{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+  .chartbox{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:12px 12px 8px}
+  .chartbox .ct{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px}
+  .chartbox .ct b{font-size:13px}
+  .chartbox .ct span{font-size:11px;color:var(--dim)}
+  .chartbox .cap{font-size:10.5px;color:var(--dim);margin-top:4px;display:flex;justify-content:space-between}
+  .reports{display:grid;grid-template-columns:repeat(auto-fill,minmax(228px,1fr));gap:10px}
+  .rep{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;display:flex;gap:10px;align-items:center}
+  .rep:hover{border-color:rgba(96,165,250,.45)}
+  .rep .ico{font-size:17px}
+  .rep .nm{font-size:12.5px;color:var(--txt);font-weight:600}
+  .rep .dt{font-size:10.5px;color:var(--dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px}
+  .rep>span:last-child{min-width:0}
+  .rep a{display:block}
+  footer{margin-top:26px;font-size:11.5px;color:var(--dim);line-height:1.9;border-top:1px solid var(--line);padding-top:16px}
+  footer code{background:rgba(255,255,255,.05);padding:1px 6px;border-radius:5px;color:#a9b7cc}
+  .cal{margin-top:16px;padding-top:14px;border-top:1px dashed var(--line)}
+  .cal-head{display:flex;justify-content:space-between;align-items:baseline;font-size:11.5px;color:var(--muted);margin-bottom:9px}
+  .cal-legend{color:var(--dim);font-size:10.5px}
+  .cal-legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin:0 4px 0 10px;vertical-align:-1px}
+  .cal-legend i.win{background:rgba(251,191,36,.18);border:1px solid rgba(251,191,36,.5)}
+  .cal-legend i.today{background:var(--blue)}
+  .cal-legend i.exec{background:var(--green)}
+  .cal-days{display:flex;flex-wrap:wrap;gap:5px}
+  .cal-day{width:27px;height:25px;display:grid;place-items:center;border-radius:7px;font-size:10.5px;
+    color:var(--dim);background:rgba(255,255,255,.025);border:1px solid transparent}
+  .cal-day.win{border-color:rgba(251,191,36,.38);color:var(--amber)}
+  .cal-day.today{background:var(--blue);color:#07101f;font-weight:700;border-color:transparent}
+  .cal-day.exec{background:rgba(45,212,167,.2);color:var(--green);border-color:rgba(45,212,167,.45)}
+  .cal-day.exec.today{background:var(--green);color:#052a22}
+  .tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+  .tablewrap table{min-width:540px}
+  @media(max-width:640px){
+    .wrap{padding:18px 14px 34px}
+    h1{font-size:19px}
+    header.top{gap:10px}
+    .topmeta{text-align:left;font-size:11.5px}
+    .hero{padding:17px 18px}
+    .hero h2{font-size:20px}
+    .hero .desc{font-size:12px}
+    .hero-side{text-align:left;min-width:0;align-items:flex-start}
+    .chips{justify-content:flex-start}
+    .cards{grid-template-columns:1fr}
+    .grid2{grid-template-columns:1fr}
+    .card{min-width:0;padding:16px 16px 15px}
+    .badge{font-size:11px;padding:4px 8px}
+    .price{font-size:27px}
+    .m{font-size:10.5px}
+    .panel{padding:16px 15px}
+    .sec-title{margin:20px 2px 10px}
+    .cal-day{width:25px;height:23px;font-size:10px}
+  }
+  .empty{padding:22px;text-align:center;color:var(--dim);font-size:12.5px}
+  .warnbox{border:1px solid rgba(251,191,36,.35);background:rgba(251,191,36,.07);color:#f6d98a;
+    border-radius:12px;padding:10px 14px;font-size:12px;margin-bottom:14px;line-height:1.6}
+
+  /* ---------- 执行窗口 ---------- */
+  .exec{padding-top:17px}
+  .exec .hint code{background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px;color:#a9b7cc;font-size:11px}
+  .exec-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px 18px;flex-wrap:wrap}
+  .exec-status{font-size:11.5px;color:var(--dim);display:flex;align-items:center;gap:7px;flex-wrap:wrap;
+    max-width:100%;line-height:1.7}
+  .exec-status code{background:rgba(255,255,255,.06);padding:1px 6px;border-radius:5px;color:#a9b7cc;font-size:11px}
+  .ex-dot{width:7px;height:7px;border-radius:50%;background:var(--dim);flex:none}
+  .ex-dot.ok{background:var(--green);box-shadow:0 0 8px rgba(45,212,167,.85)}
+  .ex-dot.warn{background:var(--amber);box-shadow:0 0 8px rgba(251,191,36,.7)}
+  .exec-rows{display:flex;flex-direction:column;gap:9px;margin-top:14px}
+  .ex-row{display:grid;grid-template-columns:20px 132px minmax(0,1fr) 148px 92px;
+    grid-template-areas:"chk sym meta amt sh";align-items:center;gap:10px;
+    padding:10px 13px;border:1px solid var(--line);border-radius:14px;
+    background:rgba(255,255,255,.025);cursor:pointer;transition:border-color .16s,background .16s;user-select:none}
+  .ex-row:hover{border-color:rgba(255,255,255,.16)}
+  .ex-row.on{border-color:rgba(45,212,167,.42);background:rgba(45,212,167,.055)}
+  .ex-check{grid-area:chk;width:18px;height:18px;accent-color:#2dd4a7;cursor:pointer;margin:0}
+  .ex-sym{grid-area:sym;min-width:0}
+  .ex-sym b{font-size:15px;letter-spacing:.4px}
+  .ex-sym small{display:block;font-size:10.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ex-meta{grid-area:meta;min-width:0;display:flex;flex-wrap:wrap;align-items:baseline;gap:3px 13px;
+    font-size:11.5px;color:var(--muted)}
+  .ex-meta .px{color:var(--txt);font-size:13px;font-weight:600}
+  .ex-meta .need{color:var(--dim)}
+  .ex-meta .done{color:var(--green)}
+  .ex-meta .defer{color:var(--amber)}
+  .ex-amt{grid-area:amt;display:flex;align-items:center;gap:5px;background:rgba(0,0,0,.28);
+    border:1px solid var(--line);border-radius:10px;padding:5px 9px}
+  .ex-row.on .ex-amt{border-color:rgba(45,212,167,.35)}
+  .ex-amt .cur{color:var(--dim);font-size:12px}
+  .ex-input{width:100%;min-width:0;background:transparent;border:0;outline:0;color:var(--txt);
+    font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;padding:2px 0;font-family:inherit}
+  .ex-input:disabled{color:var(--dim);-webkit-text-fill-color:var(--dim)}
+  .ex-input::placeholder{color:var(--dim);font-weight:400}
+  .ex-input::-webkit-outer-spin-button,.ex-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .ex-shares{grid-area:sh;font-size:10.5px;color:var(--dim);text-align:right;white-space:nowrap}
+  .exec-bar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
+    margin-top:15px;padding-top:14px;border-top:1px dashed var(--line)}
+  .exec-sum{font-size:12px;color:var(--muted);line-height:1.75}
+  .exec-sum b{color:var(--txt);font-size:15px}
+  .exec-sum .warn{color:var(--amber)}
+  .exec-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .btn{border:1px solid var(--line);background:rgba(255,255,255,.045);color:var(--muted);
+    font-size:12.5px;padding:8px 14px;border-radius:11px;cursor:pointer;transition:.16s;font-family:inherit}
+  .btn:hover{color:var(--txt);border-color:rgba(255,255,255,.2)}
+  .btn.primary{background:linear-gradient(135deg,#1fae8a,#2dd4a7);border-color:transparent;color:#04241d;
+    font-weight:700;box-shadow:0 6px 18px rgba(45,212,167,.22)}
+  .btn.primary:hover{filter:brightness(1.06);color:#04241d}
+  .btn.primary:disabled{background:rgba(255,255,255,.07);color:var(--dim);cursor:not-allowed;box-shadow:none}
+  .ex-cmd{display:none;margin-top:11px;font-size:11.5px;color:#cbd5e1;background:rgba(0,0,0,.3);
+    border:1px dashed rgba(251,191,36,.4);border-radius:10px;padding:9px 12px;line-height:1.8;word-break:break-all}
+  .ex-cmd.show{display:block}
+  .ex-cmd code{color:#f6d98a}
+  .ex-fx{margin-top:11px;font-size:11.5px;color:var(--muted);display:flex;align-items:center;
+    gap:7px;flex-wrap:wrap;background:rgba(96,165,250,.06);border:1px solid rgba(96,165,250,.18);
+    border-radius:10px;padding:8px 12px;line-height:1.7}
+  .ex-fx b{color:var(--txt);font-weight:600}
+  .ex-fx input{width:92px;background:rgba(0,0,0,.3);border:1px solid var(--line);border-radius:8px;
+    color:var(--txt);font-size:12px;padding:4px 8px;font-family:inherit;outline:0}
+  .ex-fx .warn{color:var(--amber)}
+  .ex-recent{margin-top:16px;padding-top:14px;border-top:1px dashed var(--line)}
+  .ex-recent .rh{display:flex;justify-content:space-between;align-items:baseline;font-size:11.5px;
+    color:var(--muted);margin-bottom:5px}
+  .ex-recent .rh span{color:var(--dim);font-size:10.5px}
+  .ex-recent table{font-size:12px}
+  .ex-recent td{padding:6px 8px 6px 0}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(14px);opacity:0;
+    pointer-events:none;z-index:99;max-width:min(92vw,720px);padding:12px 20px;border-radius:14px;
+    font-size:13px;line-height:1.6;background:linear-gradient(135deg,#0f3b31,#0b2621);
+    border:1px solid rgba(45,212,167,.5);color:#c6f7e9;box-shadow:0 14px 34px rgba(0,0,0,.45);transition:.25s}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast.err{background:linear-gradient(135deg,#3b1520,#2a1119);border-color:rgba(248,113,113,.55);color:#ffd3d3}
+  @media(max-width:760px){
+    .ex-row{grid-template-columns:20px minmax(0,1fr) 128px;
+      grid-template-areas:"chk sym amt" "chk meta sh";row-gap:6px}
+    .ex-shares{text-align:left}
+    .exec-bar{align-items:flex-start;flex-direction:column}
+    .exec-btns{width:100%}
+    .exec-btns .btn.primary{flex:1}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <div class="logo">📡</div>
+      <div>
+        <h1>美股定投雷达</h1>
+        <div class="sub">VOO 75% · SMH 20% · TSLA 5% ｜ 每月必投，月内择时</div>
+      </div>
+    </div>
+    <div class="topmeta" id="topmeta"></div>
+  </header>
+
+  <div id="warn"></div>
+  <section class="hero" id="hero"></section>
+
+  <div class="sec-title"><h3>执行窗口</h3><span>实际投了哪个、投了多少钱 → 记账</span></div>
+  <section class="panel exec" id="execPanel"></section>
+
+  <div class="sec-title"><h3>本月定投决策</h3><span id="etdate"></span></div>
+  <section class="cards" id="cards"></section>
+
+  <div class="grid2">
+    <section class="panel" id="progress"></section>
+    <section class="panel" id="sessions"></section>
+  </div>
+
+  <section class="panel" id="scorePanel"></section>
+
+  <div class="sec-title"><h3>价格走势</h3><span>近 6 个月 · 收盘 / MA20 / MA50（后复权口径的收盘价）</span></div>
+  <div class="charts3" id="priceCharts"></div>
+
+  <section class="panel" id="reportsPanel"></section>
+
+  <footer id="footer"></footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DATA = /*__DATA__*/null;
+const MS = {VOO:{cls:'voo',color:'#60a5fa'}, SMH:{cls:'smh',color:'#2dd4a7'}, TSLA:{cls:'tsla',color:'#f472b6'}};
+const V = {BUY_NOW:['v-buy','✅ 执行'],BUY:['v-buy','✅ 定投'],WAIT:['v-wait','⏸ 等待'],DONE:['v-done','☑️ 已完成'],DEFER:['v-defer','⏳ 合并中'],PENDING:['v-partial','⏳ 已挂单'],NEXT_SESSION:['v-wait','→ 下一时段'],REVIEW_FX:['v-wait','⚠️ 待确认汇率'],PARTIAL:['v-partial','◐ 分批']};
+
+const money = v => v==null ? '—' : '$'+Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const money0 = v => v==null ? '—' : '$'+Math.round(v).toLocaleString('en-US');
+const aud = v => v==null ? '—' : 'A$'+Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const aud0 = v => v==null ? '—' : 'A$'+Math.round(v).toLocaleString('en-US');
+const FX = (DATA && DATA.fx) || {};
+const fxFirm = () => !!FX.firm;
+const fxRate = () => Number(FX.rate) || 0;
+const userFx = () => { const el = document.getElementById('exFx'); const v = el ? parseFloat(el.value) : NaN; return (isFinite(v) && v > 0.05 && v < 3) ? v : 0; };
+const effFx = () => fxFirm() ? fxRate() : userFx();
+const pct = (v,d=2) => v==null ? '—' : (v>=0?'+':'')+(v*100).toFixed(d)+'%';
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const badge = v => { const m = V[v]||['v-wait',v]; return `<span class="badge ${m[0]}">${m[1]}</span>`; };
+const clamp = (x,a,b)=>Math.max(a,Math.min(b,x));
+const SESSION_CN = {open:'开盘',midday:'午盘',close:'收盘'};
+
+function gauge(score){
+  const r=46, C=2*Math.PI*r, ARC=C*240/360, len=ARC*clamp(score,0,100)/100;
+  const color = score>=60?'#2dd4a7':score>=45?'#60a5fa':score>=30?'#fbbf24':'#f87171';
+  return `<svg class="gauge" viewBox="0 0 120 120">
+    <circle cx="60" cy="60" r="${r}" fill="none" stroke="rgba(255,255,255,.065)" stroke-width="9"
+      stroke-linecap="round" stroke-dasharray="${ARC} ${C}" transform="rotate(150 60 60)"/>
+    <circle cx="60" cy="60" r="${r}" fill="none" stroke="${color}" stroke-width="9"
+      stroke-linecap="round" stroke-dasharray="${len} ${C}" transform="rotate(150 60 60)"/>
+    <text x="60" y="57" text-anchor="middle" class="gauge-num">${Math.round(score)}</text>
+    <text x="60" y="74" text-anchor="middle" class="gauge-lbl">吸引力</text>
+  </svg>`;
+}
+
+function range52(it){
+  const m=it.metrics, pos=clamp(m.pos52,0,1);
+  return `<div style="margin-top:8px">
+    <div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--dim);margin-bottom:4px">
+      <span>52周低 $${m.lo52.toFixed(2)}</span><span>52周高 $${m.hi52.toFixed(2)}</span></div>
+    <div style="position:relative;height:6px;border-radius:99px;background:rgba(255,255,255,.07)">
+      <div style="position:absolute;left:0;top:0;bottom:0;width:${(pos*100).toFixed(1)}%;border-radius:99px;background:linear-gradient(90deg,#60a5fa,#2dd4a7)"></div>
+      <div style="position:absolute;left:${(pos*100).toFixed(1)}%;top:-3px;width:2px;height:12px;background:#fff;border-radius:2px;transform:translateX(-1px)"></div>
+    </div></div>`;
+}
+
+function card(it){
+  const ms=MS[it.symbol]||MS.VOO;
+  const cls=it.change_pct>=0?'up':'down';
+  const planAud = it.plan_aud != null ? Number(it.plan_aud) : Number(it.plan_usd);
+  const execAud = it.executed_aud != null ? Number(it.executed_aud) : Number(it.executed_usd);
+  const execPct = planAud>0 ? clamp(execAud/planAud,0,1) : 0;
+  const m=it.metrics;
+  const mets=[
+    ['52周位置', (m.pos52*100).toFixed(0)+'%'],
+    ['60日分位', (m.rank60*100).toFixed(0)+'%'],
+    ['RSI14', m.rsi.toFixed(0)],
+    ['MA20', money(m.ma20)],
+    ['距52周高', pct(m.dd52,1)],
+    ['VIX', DATA.vix.toFixed(1)],
+    ['佣金', (it.commission_pct*100).toFixed(2)+'%'],
+  ].map(([k,v])=>{
+    const warn = k==='佣金' && it.batch;
+    return `<span class="m"${warn?' style="color:#fbbf24;border-color:rgba(251,191,36,.3)"':''}>${k}<b${warn?' style="color:#fbbf24"':''}>${v}</b></span>`;
+  }).join('');
+  let trig='';
+  if(it.verdict==='WAIT') trig=`触发线 <b>${money(it.trigger)}</b>（近60日第35百分位）· 最迟 ${DATA.last_trading_day} 前完成`;
+  else if(it.verdict==='DONE') trig=`本月已完成 · ${aud(execAud)} / ${aud(planAud)}`;
+  else if(it.verdict==='DEFER' && it.batch) trig=`本月累积：佣金 ${(it.commission_pct*100).toFixed(2)}% 偏高 → <b>${it.batch.months} 个月后一次投 ${aud(it.batch.amount)}</b>（佣金 ${(it.batch.pct*100).toFixed(2)}%）`;
+  else if(it.ratio>0){
+    const buyAud = Number(it.recommend_aud || 0) || it.ratio*planAud;
+    const buyUsd = buyAud * (Number(it.fx_rate||FX.rate) || 0);
+    trig=`今日执行金额 <b>${aud(buyAud)}</b>（≈${money(buyUsd)}）≈ ${(buyUsd/it.price).toFixed(2)} 股`;
+  }
+  return `<article class="card ${ms.cls}">
+    <div class="card-top">
+      <div class="sym">${it.symbol}<small>${esc(it.name)} · ${esc(it.style_label)}</small></div>
+      ${badge(it.verdict)}
+    </div>
+    <div class="price-row">
+      <div class="price">${money(it.price)}</div>
+      <div class="chg ${cls}">${pct(it.change_pct)}</div>
+    </div>
+    <div class="mini-row">日内 ${it.day_high?money(it.day_high):'—'} / ${it.day_low?money(it.day_low):'—'} ｜ 昨收 ${money(it.prev_close)} ｜ 近1月 ${pct(it.perf_1m)} ｜ 近1年 ${pct(it.perf_1y)}</div>
+    <div class="gauge-wrap">
+      ${gauge(it.score)}
+      <div class="gauge-side">
+        <div class="vtext">${esc(it.verdict_text)}</div>
+        <div class="prog"><i style="width:${(execPct*100).toFixed(1)}%"></i></div>
+        <div class="prog-cap"><span>本月 ${aud(execAud)}</span><span>计划 ${aud(planAud)}</span></div>
+      </div>
+    </div>
+    <div class="metrics">${mets}</div>
+    ${range52(it)}
+    <div class="trigger">${trig}</div>
+  </article>`;
+}
+
+function render(){
+  if(!DATA || !DATA.items || !DATA.items.length){
+    document.getElementById('cards').innerHTML='<div class="empty">暂无数据，请先运行 <code>python3 scripts/dashboard.py</code></div>';
+    return;
+  }
+  const gen = new Date(DATA.generated_local.replace(' ','T'));
+  const isClosed = !/REGULAR/.test(DATA.market_state||'');
+  document.getElementById('topmeta').innerHTML = `
+    美东 <b>${DATA.generated_et}</b> ｜ 墨尔本 <b>${DATA.generated_local}</b><br>
+    <span class="market-pill ${isClosed?'closed':''}"><span class="dot"></span>${esc(DATA.market_state_cn)}</span>
+    &nbsp;<span class="chip">VIX <b style="color:var(--txt)">${DATA.vix.toFixed(1)}</b></span>
+    &nbsp;<span class="chip">${esc(DATA.session_label)}</span>`;
+
+  const pending = DATA.items.filter(i=>!i.invested && i.verdict!=='DEFER');
+  const deferred = DATA.items.filter(i=>!i.invested && i.verdict==='DEFER');
+  const obTotal = (DATA.obligation && DATA.obligation.remaining_aud) || 0;
+  const amtLeft = obTotal || pending.reduce((s,i)=>s+Math.max(0, Number(i.remaining_aud != null ? i.remaining_aud : (i.plan_usd-i.executed_usd))),0);
+  const totalDays = DATA.total_days || (DATA.day_idx + DATA.days_left - 1);
+  const monthPct = totalDays>0 ? DATA.day_idx/totalDays*100 : 0;
+  const sess = DATA.today_sessions||{};
+  const chips = ['open','midday','close'].map(s=> sess[s]
+      ? `<span class="chip ok">${SESSION_CN[s]} ✓</span>`
+      : `<span class="chip miss">${SESSION_CN[s]} —</span>`).join('');
+  document.getElementById('etdate').textContent = `${DATA.month_label} · 第 ${DATA.day_idx}/${totalDays} 个交易日 · 剩余 ${DATA.days_left} 个`;
+  document.getElementById('hero').innerHTML = `
+    <div>
+      <div class="label">本月硬性义务（评分只做辅助择时）</div>
+      <h2>${pending.length===0 && deferred.length===0
+        ? '本月定投已全部完成 <em>🎉</em>'
+        : (pending.length===0
+            ? `本月下单已完成：<em>${deferred.length}</em> 个小额仓位在累积（${deferred.map(i=>i.symbol).join('、')}）`
+            : (DATA.phase==='early'
+            ? `本月定投窗口已开启：<em>${pending.length}</em> 个标的待执行，合计 <em>${aud0(amtLeft)}</em>`
+            : (DATA.items.some(i=>i.executed_aud>0 || i.executed_usd>0)
+                ? `本月还有 <em>${pending.length}</em> 个标的未完成，合计 <em>${aud0(amtLeft)}</em>`
+                : `本月尚未定投：<em>${pending.length}</em> 个标的待执行，合计 <em>${aud0(amtLeft)}</em>`)))}</h2>
+      <div class="desc">${pending.length===0
+        ? (deferred.length
+            ? '大额仓位已下单；小额仓位因固定佣金占比过高按下单周期累积，累计到执行月再一次性买入（规则可在 config.json 的 commission 里调整）。'
+            : '本月额度已执行完毕，下一次定投窗口在月初。想加仓可以用下月额度提前布局。')
+        : `${esc(DATA.order_window)} 成交后在下方「执行窗口」勾选标的、填金额并确认，即可记账。`}</div>
+    </div>
+    <div class="hero-side">
+      <div class="cap">本月已执行（AUD 口径）</div>
+      <div class="big-num">${DATA.executed_total_aud!=null?aud0(DATA.executed_total_aud):money0(DATA.executed_total)} <span style="font-size:13px;color:var(--muted)">/ ${DATA.plan_total_aud!=null?aud0(DATA.plan_total_aud):money0(DATA.plan_total)}</span></div>
+      <div class="cap" style="font-size:10.5px">≈ US$${DATA.executed_total!=null?Math.round(DATA.executed_total).toLocaleString('en-US'):'—'} / US$${DATA.plan_total!=null?Math.round(DATA.plan_total).toLocaleString('en-US'):'—'} · 1 AUD = ${(FX.rate||0).toFixed(4)} USD</div>
+      <div class="chips">${chips}</div>
+    </div>`;
+
+  document.getElementById('cards').innerHTML = DATA.items.map(card).join('');
+  renderExec();
+
+  const secs = ['open','midday','close'];
+  const sessRows = DATA.sessions.slice(-9).reverse().map(r=>`
+    <tr><td>${esc(r.t.slice(5))}</td><td>${SESSION_CN[r.session]||esc(r.session)}</td>
+    <td>${r.symbol}</td><td class="num">${money(r.price)}</td><td class="num">${(r.score).toFixed(0)}</td>
+    <td>${badge(r.verdict)}</td></tr>`).join('');
+  document.getElementById('sessions').innerHTML = `
+    <h4>最近扫描记录</h4><div class="hint">开盘 / 午盘 / 收盘前三次扫描的评分留痕</div>
+    ${sessRows ? `<table><thead><tr><th>时间</th><th>时点</th><th>标的</th><th>价格</th><th>评分</th><th>结论</th></tr></thead><tbody>${sessRows}</tbody></table>`
+      : `<div class="empty">还没有三时点记录。每晚自动扫描后会写入这里。</div>`}`;
+
+  const cw = DATA.contribution||null;
+  const rows = DATA.items.map(it=>{
+    const target = (DATA.weights[it.symbol]||0)*100;
+    const actual = cw ? cw.weights[it.symbol]*100 : null;
+    const drift = actual==null?null:actual-target;
+    const driftTxt = drift==null?'—':`${drift>=0?'+':''}${drift.toFixed(1)}pp`;
+    const driftCls = drift==null?'':(Math.abs(drift)>5?'drift-up':'drift-ok');
+    const planA = it.plan_aud!=null?Number(it.plan_aud):Number(it.plan_usd);
+    const execA = it.executed_aud!=null?Number(it.executed_aud):Number(it.executed_usd);
+    const execP = planA>0?clamp(execA/planA,0,1)*100:0;
+    return `<tr><td>${it.symbol}</td><td class="num">${target.toFixed(0)}%</td>
+      <td class="num">${aud(planA)}</td><td class="num">${aud(execA)}</td>
+      <td>${it.verdict==='DEFER' ? '<span class="badge v-defer" style="font-size:10.5px;padding:3px 8px">累积中</span>' : `<span class="mini-prog"><i style="width:${execP.toFixed(0)}%"></i></span>${execP.toFixed(0)}%`}</td>
+      <td class="num">${actual==null?'—':actual.toFixed(1)+'%'}</td>
+      <td class="${driftCls}">${driftTxt}</td></tr>`;
+  }).join('');
+  const cal = DATA.calendar||{days:[]};
+  const calHtml = cal.days.length ? `
+    <div class="cal">
+      <div class="cal-head"><span>本月交易日窗口</span>
+        <span class="cal-legend"><i class="win"></i>定投窗口 <i class="today"></i>今天 <i class="exec"></i>已执行</span></div>
+      <div class="cal-days">${cal.days.map(d=>`<span class="cal-day ${d.today?'today':''} ${d.window?'win':''} ${d.executed?'exec':''}" title="${d.date}">${d.dom}</span>`).join('')}</div>
+    </div>` : '';
+  document.getElementById('progress').innerHTML = `
+    <h4>本月执行进度</h4><div class="hint">额度按目标权重拆分 · 累计贡献占比用于年度权重检查（偏离 >5pp 提示）</div>
+    <div class="tablewrap"><table><thead><tr><th>标的</th><th>目标</th><th>本月计划(A$)</th><th>已执行(A$)</th><th>完成度</th><th>累计占比</th><th>偏离</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>${calHtml}`;
+
+  renderScorePanel();
+  renderPriceCharts();
+
+  const reps = DATA.reports.map(r=>`<a class="rep" href="../${r.path}" title="${esc(r.path)}">
+      <span class="ico">${r.ico}</span><span><span class="nm">${esc(r.label)}</span><span class="dt">${esc(r.name)} · ${esc(r.mtime)}</span></span></a>`).join('');
+  document.getElementById('reportsPanel').innerHTML = `
+    <h4>报告归档</h4><div class="hint">Markdown 报告 · 点击用默认应用打开</div>
+    <div class="reports">${reps||'<div class="empty">还没有报告</div>'}</div>`;
+
+  document.getElementById('footer').innerHTML = `
+    数据：Yahoo Finance（curl）/ Nasdaq API，本地缓存兜底；可能延时 0–15 分钟。评分 = 位置 20% + 分位 20% + 乖离 20% + RSI 15% + 回撤 15% + VIX 10%。<br>
+    佣金按 config.json 的 commission 估算（当前 ${ (DATA.commission_cfg&&DATA.commission_cfg.per_order_usd)||0 }/笔，容忍上限 ${ (DATA.commission_cfg&&DATA.commission_cfg.max_pct)||0 }%）；超过上限的小额单会建议累积合并。<br>
+    执行窗口：运行 <code>python3 scripts/dashboard.py --serve</code> 后从 ${esc(DATA.exec_api || 'http://127.0.0.1:8765')}/ 打开即可直接记账（AUD 义务写入 data/dca.sqlite，页面自动刷新）。<br>
+    页面由 <code>python3 scripts/dashboard.py --open</code> 生成（静态 HTML，刷新需重新生成）· 本页不构成投资建议。`;
+}
+
+function svgLine(points, w, h, color, width){
+  if(!points.length) return '';
+  return `<path d="${points.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ')}"
+    fill="none" stroke="${color}" stroke-width="${width}" stroke-linejoin="round" stroke-linecap="round"/>`;
+}
+
+function renderScorePanel(){
+  const S = DATA.score_history;
+  const box = document.getElementById('scorePanel');
+  if(!S || !S.timestamps || S.timestamps.length<2){
+    box.innerHTML = `<h4>评分轨迹</h4><div class="hint">每次扫描的吸引力评分变化（越高越适合买）</div>
+      <div class="empty" style="padding:14px">只有 1 个时点，自动扫描几天后这里会出现趋势线。可手动运行 <code>python3 scripts/scan.py --session midday</code> 增加记录。</div>`;
+    return;
+  }
+  const W=1120,H=210,PAD={t:14,r:16,b:26,l:34};
+  const n = S.timestamps.length;
+  const x = i => PAD.l + (W-PAD.l-PAD.r) * (n===1?0.5:i/(n-1));
+  const y = v => PAD.t + (H-PAD.t-PAD.b) * (1-v/100);
+  let grid='';
+  [0,25,50,75,100].forEach(v=>{grid+=`<line x1="${PAD.l}" x2="${W-PAD.r}" y1="${y(v)}" y2="${y(v)}" stroke="rgba(255,255,255,.055)" stroke-dasharray="3 4"/>
+    <text x="${PAD.l-8}" y="${y(v)+3.5}" fill="#5f6f8a" font-size="10" text-anchor="end">${v}</text>`;});
+  const series = Object.entries(S.series).map(([sym,arr])=>{
+    const pts = arr.map((v,i)=>v==null?null:[x(i),y(v)]).filter(Boolean);
+    return `<path d="${pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ')}"
+      fill="none" stroke="${(MS[sym]||{}).color||'#60a5fa'}" stroke-width="2" stroke-linejoin="round"/>
+      ${pts.length?`<circle cx="${pts[pts.length-1][0]}" cy="${pts[pts.length-1][1]}" r="3.4" fill="${(MS[sym]||{}).color||'#60a5fa'}"/>`:''}`;
+  }).join('');
+  const xt = [0, Math.floor((n-1)/2), n-1].map(i=>{
+    const anchor = i===0 ? 'start' : (i===n-1 ? 'end' : 'middle');
+    const px = i===0 ? PAD.l : (i===n-1 ? W-PAD.r : x(i));
+    return `<text x="${px}" y="${H-8}" fill="#5f6f8a" font-size="10" text-anchor="${anchor}">${esc((S.timestamps[i]||'').slice(5,16))}</text>`;
+  }).join('');
+  box.innerHTML = `<h4>评分轨迹</h4><div class="hint">每次扫描的吸引力评分（0–100，越高越适合买）· 最近 ${n} 个时点</div>
+    <div class="legend">${Object.keys(S.series).map(sym=>`<span><i style="background:${(MS[sym]||{}).color||'#60a5fa'}"></i>${sym}</span>`).join('')}</div>
+    <svg class="chart" viewBox="0 0 ${W} ${H}">${grid}${series}${xt}</svg>`;
+}
+
+function renderPriceCharts(){
+  const host = document.getElementById('priceCharts');
+  host.innerHTML = DATA.items.map(it=>{
+    const H = it.history, n = H.close.length;
+    if(n<2) return '';
+    const W=520, HH=150, PAD={t:10,r:12,b:20,l:6};
+    const all = H.close.concat(H.ma20||[], H.ma50||[]).filter(v=>v!=null);
+    let lo=Math.min(...all), hi=Math.max(...all); const pad=(hi-lo)*0.07||1; lo-=pad; hi+=pad;
+    const x = i => PAD.l + (W-PAD.l-PAD.r)*i/(n-1);
+    const y = v => PAD.t + (HH-PAD.t-PAD.b)*(1-(v-lo)/(hi-lo));
+    const pts = arr => arr.map((v,i)=>v==null?null:[x(i),y(v)]).filter(Boolean);
+    const closePts = pts(H.close);
+    const area = closePts.length
+      ? `<path d="${closePts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ')} L ${x(n-1).toFixed(1)} ${(HH-PAD.b).toFixed(1)} L ${x(0).toFixed(1)} ${(HH-PAD.b).toFixed(1)} Z" fill="url(#g_${it.symbol})" opacity=".55"/>` : '';
+    const color = (MS[it.symbol]||{}).color||'#60a5fa';
+    const last = H.close[n-1];
+    const grid = [0.25,0.5,0.75].map(f=>`<line x1="${PAD.l}" x2="${W-PAD.r}" y1="${PAD.t+(HH-PAD.t-PAD.b)*f}" y2="${PAD.t+(HH-PAD.t-PAD.b)*f}" stroke="rgba(255,255,255,.05)" stroke-dasharray="3 4"/>`).join('');
+    const labels = `<text x="${PAD.l}" y="${HH-6}" fill="#5f6f8a" font-size="9.5">${(H.dates[0]||'').slice(5)}</text>
+      <text x="${W-PAD.r}" y="${HH-6}" fill="#5f6f8a" font-size="9.5" text-anchor="end">${(H.dates[n-1]||'').slice(5)}</text>`;
+    const loTxt = `<text x="${W-PAD.r}" y="${PAD.t+10}" fill="#5f6f8a" font-size="9.5" text-anchor="end">$${hi.toFixed(1)}</text>
+      <text x="${W-PAD.r}" y="${HH-PAD.b-4}" fill="#5f6f8a" font-size="9.5" text-anchor="end">$${lo.toFixed(1)}</text>`;
+    return `<div class="chartbox">
+      <div class="ct"><b>${it.symbol}</b><span>${pct(it.perf_3m)} / 3个月</span></div>
+      <svg class="chart" viewBox="0 0 ${W} ${HH}">
+        <defs><linearGradient id="g_${it.symbol}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${color}" stop-opacity=".38"/><stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+        </linearGradient></defs>
+        ${grid}${area}
+        ${H.ma20?svgLine(pts(H.ma20),W,HH,'#fbbf24',1.2):''}
+        ${H.ma50?svgLine(pts(H.ma50),W,HH,'#c084fc',1.2):''}
+        ${svgLine(closePts,W,HH,color,1.9)}
+        <circle cx="${x(n-1)}" cy="${y(last)}" r="3.2" fill="${color}"/>
+        ${labels}${loTxt}
+      </svg>
+      <div class="cap"><span>收盘 ${money(last)}</span><span>MA20 ${H.ma20?money(H.ma20[n-1]):'—'} · MA50 ${H.ma50?money(H.ma50[n-1]):'—'}</span></div>
+    </div>`;
+  }).join('');
+  if(DATA.errors && DATA.errors.length){
+    document.getElementById('warn').innerHTML = `<div class="warnbox">部分数据异常：${DATA.errors.map(esc).join('；')}</div>`;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 执行窗口：勾选实际成交的标的 + AUD 金额 → 写入 SQLite 台账（data/dca.sqlite）
+//   live 模式：本地记账服务在运行（--serve），可直接 POST /api/confirm
+//   copy 模式：静态文件 + 服务未启动，退化为「复制 CLI 记账命令」
+// ---------------------------------------------------------------------------
+const EXEC = {
+  mode: 'probe',
+  reason: '',
+  api: (DATA && DATA.exec_api) || 'http://127.0.0.1:8765',
+  sel: {}, amt: {}, ready: false,
+};
+
+function initExecState(){
+  if (EXEC.ready) return;
+  (DATA.items || []).forEach(it => {
+    EXEC.sel[it.symbol] = false;
+    const leftAud = it.remaining_aud != null ? Number(it.remaining_aud) : Number(it.remaining_usd);
+    EXEC.amt[it.symbol] = leftAud > 0 ? leftAud.toFixed(2) : '';
+  });
+  EXEC.ready = true;
+}
+
+function exEntries(){
+  return (DATA.items || []).filter(it => EXEC.sel[it.symbol]).map(it => {
+    const n = Number(EXEC.amt[it.symbol]);
+    return {symbol: it.symbol, amount: (isFinite(n) ? n : 0), item: it};
+  });
+}
+
+function exCmd(ents){
+  let cmd = 'python3 scripts/scan.py --confirm ' +
+    ents.map(e => e.symbol + ':' + (Math.round(e.amount * 100) / 100)).join(',');
+  if (!fxFirm() && effFx()) cmd += ' --fx-rate ' + effFx().toFixed(4);
+  return cmd;
+}
+
+function renderExec(){
+  initExecState();
+  const host = document.getElementById('execPanel');
+  if (!host) return;
+  const items = (DATA && DATA.items) || [];
+  if (!items.length){
+    host.innerHTML = '<div class="empty">暂无行情数据，无法记账。请先运行 <code>python3 scripts/scan.py</code>。</div>';
+    return;
+  }
+  const rows = items.map(it => {
+    const sel = !!EXEC.sel[it.symbol];
+    const planAud = it.plan_aud != null ? Number(it.plan_aud) : Number(it.plan_usd);
+    const execAud = it.executed_aud != null ? Number(it.executed_aud) : Number(it.executed_usd);
+    const left = Math.max(0, planAud - execAud);
+    const done = left <= 0.005;
+    const meta = `<span class="px">${money(it.price)}</span>` +
+      `<span class="need">计划 ${aud(planAud)}${it.plan_usd!=null?`（≈${money(it.plan_usd)}）`:''}</span>` +
+      (done ? `<span class="done">已投 ${aud(execAud)} · 本月已完成</span>`
+            : `<span class="need">已投 ${aud(execAud)} · 还差 ${aud(left)}</span>`) +
+      (it.verdict === 'DEFER' ? '<span class="defer">建议累积中</span>' : '');
+    return `<div class="ex-row ${sel?'on':''}" data-sym="${it.symbol}">
+      <input class="ex-check" type="checkbox" data-sym="${it.symbol}" ${sel?'checked':''} aria-label="选择 ${it.symbol}">
+      <span class="ex-sym"><b>${it.symbol}</b><small>${esc(it.name)}</small></span>
+      <span class="ex-meta">${meta}</span>
+      <span class="ex-amt"><span class="cur">A$</span><input class="ex-input" type="number" inputmode="decimal"
+        min="0" step="0.01" data-sym="${it.symbol}" value="${esc(EXEC.amt[it.symbol])}"
+        placeholder="${done?'加仓金额':'0.00'}" ${sel?'':'disabled'}></span>
+      <span class="ex-shares" data-shares="${it.symbol}">—</span>
+    </div>`;
+  }).join('');
+  const fxLine = (FX.rate != null || !fxFirm()) ? `
+    <div class="ex-fx">
+      <span>汇率 1 AUD = <b>${fxRate()?fxRate().toFixed(4):'—'}</b> USD</span>
+      <span style="color:var(--dim)">（${esc(FX.status||'未知')}${FX.firm?'':' · 仅估算，不可作为确定下单金额'}）</span>
+      ${fxFirm() ? '' : `<span class="warn">请填实际汇率：</span><input id="exFx" type="number" step="0.0001" min="0.05" max="3" placeholder="例如 0.6800">`}
+      <span style="color:var(--dim)">· 金额单位 A$，成交价单位 US$</span>
+    </div>` : '';
+  host.innerHTML = `
+    <div class="exec-top">
+      <div>
+        <h4>本次成交</h4>
+        <div class="hint" style="margin-bottom:0">勾选实际成交的标的、填上 AUD 金额（默认 = 本月剩余计划），点「确认执行并记账」写入台账（data/dca.sqlite）。</div>
+      </div>
+      <div class="exec-status" id="exStatus"></div>
+    </div>
+    <div class="exec-rows">${rows}</div>
+    ${fxLine}
+    <div class="exec-bar">
+      <div class="exec-sum" id="exSum"></div>
+      <div class="exec-btns">
+        <button class="btn" id="exAll" type="button">按计划全选</button>
+        <button class="btn" id="exClear" type="button">清空</button>
+        <button class="btn primary" id="exSubmit" type="button" disabled>确认执行并记账</button>
+      </div>
+    </div>
+    <div class="ex-cmd" id="exCmd"></div>
+    <div class="ex-recent" id="exRecent"></div>`;
+  bindExec();
+  renderExecStatus();
+  renderRecentEntries();
+  updateExec();
+}
+
+function bindExec(){
+  const host = document.getElementById('execPanel');
+  host.onclick = (e) => {
+    const row = e.target.closest ? e.target.closest('.ex-row') : null;
+    if (!row || e.target.closest('input') || e.target.closest('button')) return;
+    toggleExec(row.dataset.sym);
+  };
+  host.onchange = (e) => {
+    if (e.target.classList && e.target.classList.contains('ex-check')) toggleExec(e.target.dataset.sym);
+  };
+  host.oninput = (e) => {
+    if (e.target.classList && e.target.classList.contains('ex-input')){
+      EXEC.amt[e.target.dataset.sym] = e.target.value;
+      updateExec();
+    }
+  };
+  host.onkeydown = (e) => {
+    if (e.target.classList && e.target.classList.contains('ex-input') && e.key === 'Enter'){
+      e.preventDefault(); submitExec();
+    }
+  };
+  const fxEl = document.getElementById('exFx');
+  if (fxEl) fxEl.oninput = updateExec;
+  const all = document.getElementById('exAll'); if (all) all.onclick = selectPlanned;
+  const clr = document.getElementById('exClear'); if (clr) clr.onclick = clearExec;
+  const sub = document.getElementById('exSubmit'); if (sub) sub.onclick = submitExec;
+}
+
+function toggleExec(sym){
+  EXEC.sel[sym] = !EXEC.sel[sym];
+  const row = document.querySelector(`.ex-row[data-sym="${sym}"]`);
+  if (row){
+    row.classList.toggle('on', EXEC.sel[sym]);
+    const cb = row.querySelector('.ex-check'); if (cb) cb.checked = EXEC.sel[sym];
+    const inp = row.querySelector('.ex-input');
+    if (inp){
+      inp.disabled = !EXEC.sel[sym];
+      if (EXEC.sel[sym]) setTimeout(() => { try { inp.focus(); } catch(e){} }, 0);
+    }
+  }
+  updateExec();
+}
+
+function selectPlanned(){
+  (DATA.items || []).forEach(it => {
+    const left = Math.max(0, Number(it.remaining_aud != null ? it.remaining_aud : it.remaining_usd) || 0);
+    EXEC.sel[it.symbol] = left > 0.004;
+    if (left > 0.004) EXEC.amt[it.symbol] = left.toFixed(2);
+  });
+  renderExec();
+}
+
+function clearExec(){
+  (DATA.items || []).forEach(it => { EXEC.sel[it.symbol] = false; });
+  renderExec();
+}
+
+function renderExecStatus(){
+  const el = document.getElementById('exStatus');
+  if (!el) return;
+  if (EXEC.mode === 'live'){
+    let hostTxt = EXEC.api;
+    try { hostTxt = new URL(EXEC.api).host; } catch(e){}
+    el.innerHTML = `<span class="ex-dot ok"></span>已连接本地记账服务 <code>${esc(hostTxt)}</code> · 确认后写入台账 <code>data/dca.sqlite</code>（A$）`;
+  } else if (EXEC.mode === 'copy'){
+    el.innerHTML = EXEC.reason === 'origin'
+      ? `<span class="ex-dot warn"></span>记账服务在运行，但当前页面来源不允许写入：请改用 <code>${esc(EXEC.api)}</code> 打开面板，或复制命令手动记账`
+      : `<span class="ex-dot warn"></span>未连接记账服务：运行 <code>python3 scripts/dashboard.py --serve</code> 后可一键写入；现在会生成命令供手动执行`;
+  } else {
+    el.innerHTML = '<span class="ex-dot"></span>正在检测本地记账服务…';
+  }
+  updateExec();
+}
+
+function updateExec(){
+  if (!DATA || !DATA.items) return;
+  const fx = effFx();
+  const ents = exEntries();
+  const leftTotal = DATA.items.reduce((s, it) => s + Math.max(0, Number(it.remaining_aud != null ? it.remaining_aud : it.remaining_usd) || 0), 0);
+  const total = ents.reduce((s, e) => s + (e.amount > 0 ? e.amount : 0), 0);
+  DATA.items.forEach(it => {
+    const sh = document.querySelector(`[data-shares="${it.symbol}"]`);
+    if (!sh) return;
+    const amt = Number(EXEC.amt[it.symbol]);
+    sh.textContent = (EXEC.sel[it.symbol] && isFinite(amt) && amt > 0 && it.price > 0 && fx > 0)
+      ? '≈ ' + ((amt * fx) / it.price).toFixed(2) + ' 股' : '—';
+  });
+  const fxMissing = fx <= 0;
+  const sum = document.getElementById('exSum');
+  if (sum){
+    const dup = ents.filter(e => e.item.invested);
+    const bad = ents.filter(e => !(e.amount > 0));
+    const over = total > leftTotal + 0.005;
+    sum.innerHTML = ents.length
+      ? `已选 <b>${ents.length}</b> 个标的 · 合计 <b>${aud(total)}</b>` +
+        (over ? ` <span class="warn">（超出本月剩余计划 ${aud(leftTotal)}，仍可记账）</span>`
+              : ` <span style="color:var(--dim)">/ 本月还差 ${aud(leftTotal)}</span>`) +
+        (bad.length ? `<br><span class="warn">金额需大于 0：${bad.map(e => e.symbol).join('、')}</span>` : '') +
+        (dup.length ? `<br><span class="warn">${dup.map(e => e.symbol).join('、')} 本月已有记录，将追加一条</span>` : '')
+      : '<span style="color:var(--dim)">勾选上方标的并填写金额；不勾选 = 不记账。</span>';
+  }
+  const btn = document.getElementById('exSubmit');
+  const canSubmit = ents.length && ents.every(e => e.amount > 0) && (fxFirm() || fx > 0);
+  if (btn){
+    if (EXEC.mode === 'probe'){ btn.disabled = true; btn.textContent = '检测记账服务…'; }
+    else {
+      btn.disabled = !canSubmit;
+      btn.textContent = EXEC.mode === 'copy' ? '复制记账命令' : '确认执行并记账';
+    }
+  }
+  const cmd = document.getElementById('exCmd');
+  if (cmd){
+    if (EXEC.mode === 'copy' && canSubmit){
+      cmd.classList.add('show');
+      cmd.innerHTML = '静态页面无法直接写台账。已生成命令，点上方按钮复制后在项目目录运行（可加 <code>--price</code> 填实际成交价）：<br><code>' + esc(exCmd(ents)) + '</code>';
+    } else {
+      cmd.classList.remove('show');
+    }
+  }
+  if (fxMissing && !fxFirm() && ents.length){
+    sum.innerHTML += '<br><span class="warn">汇率已过期：请在上方填写实际 AUD/USD 汇率后再确认</span>';
+  }
+}
+
+function renderRecentEntries(){
+  const host = document.getElementById('exRecent');
+  if (!host) return;
+  const list = (DATA.recent_entries || []).slice(0, 6);
+  const rows = list.map(r => {
+    const amtAud = r.amount_aud != null ? r.amount_aud : r.amount;
+    const usdTxt = r.amount_usd ? `（≈${money(r.amount_usd)}）` : '';
+    return `<tr><td>${esc((r.confirmed_at || r.trade_date || r.et_date || '').replace('T',' '))}</td>
+      <td>${esc(r.symbol)}</td><td class="num">${aud(amtAud)}${usdTxt}</td>
+      <td class="num">${money(r.price)}</td><td>${esc(r.note || '')}</td></tr>`;
+  }).join('');
+  host.innerHTML = `<div class="rh"><span>最近记账</span><span>${list.length ? '来自台账 data/dca.sqlite' : '确认后显示在这里'}</span></div>` +
+    (rows ? `<div class="tablewrap"><table><thead><tr><th>记账时间（美东）</th><th>标的</th><th>金额(A$)</th><th>成交价(US$)</th><th>备注</th></tr></thead><tbody>${rows}</tbody></table></div>`
+           : '<div class="empty" style="padding:8px">还没有记账记录。</div>');
+}
+
+async function submitExec(){
+  const ents = exEntries();
+  if (!ents.length){ showToast('请先勾选至少一个标的', true); return; }
+  const bad = ents.filter(e => !(e.amount > 0));
+  if (bad.length){ showToast('金额需大于 0：' + bad.map(e => e.symbol).join('、'), true); return; }
+  if (!fxFirm() && !effFx()){ showToast('汇率不可用：请先填写实际 AUD/USD 汇率', true); return; }
+  if (EXEC.mode !== 'live'){ copyCommand(ents); return; }
+  if (!EXEC.pendingKey) EXEC.pendingKey = 'ui-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+  const btn = document.getElementById('exSubmit');
+  const label = btn ? btn.textContent : '';
+  if (btn){ btn.disabled = true; btn.textContent = '正在写入…'; }
+  try {
+    const headers = {'Content-Type': 'application/json'};
+    if (DATA.exec_token) headers['X-DCA-Token'] = DATA.exec_token;
+    const r = await fetch(EXEC.api + '/api/confirm', {
+      method: 'POST', headers,
+      body: JSON.stringify({
+        entries: ents.map(e => ({
+          symbol: e.symbol,
+          amount: Math.round(e.amount * 100) / 100,   // AUD 义务金额
+          price: Number(e.item.price) || undefined,   // 页面展示价（USD），行情源失败时也能记账
+          fx_rate: fxFirm() ? fxRate() : effFx(),      // AUD→USD
+          status: 'filled',
+          idempotency_key: EXEC.pendingKey + ':' + e.symbol,
+        })),
+        note: '面板执行窗口',
+      }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.ok) throw new Error(j.error || ('记账服务返回 ' + r.status));
+    try { location.hash = 'saved=' + encodeURIComponent(j.message || '已记录'); } catch(e){}
+    EXEC.pendingKey = null;
+    showToast(j.message || '已记录');
+    setTimeout(() => location.reload(), 700);
+  } catch (err){
+    showToast('记账失败：' + ((err && err.message) || err) + '。服务可能已停止，可改用「复制记账命令」。', true);
+    if (btn){ btn.disabled = false; btn.textContent = label || '确认执行并记账'; }
+  }
+}
+
+function copyCommand(ents){
+  const cmd = exCmd(ents);
+  const fail = () => showToast('复制失败，请手动运行：' + cmd, true);
+  const done = () => showToast('已复制到剪贴板，在项目目录运行即可记账', false);
+  const fallback = () => {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = cmd; ta.style.position = 'fixed'; ta.style.top = '-9999px';
+      document.body.appendChild(ta); ta.focus(); ta.select();
+      const ok = document.execCommand('copy'); ta.remove();
+      ok ? done() : fail();
+    } catch(e){ fail(); }
+  };
+  try {
+    if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(cmd).then(done).catch(fallback);
+    else fallback();
+  } catch(e){ fallback(); }
+}
+
+async function initExec(){
+  const bases = [];
+  try { const q = new URLSearchParams(location.search).get('api'); if (q) bases.push(q); } catch(e){}
+  if (/^https?:$/.test(location.protocol)) bases.push(location.origin);
+  bases.push(EXEC.api);
+  const seen = {};
+  let reachable = false;
+  for (const raw of bases){
+    const b = String(raw || '').replace(/\/+$/, '');
+    if (!b || seen[b]) continue;
+    seen[b] = 1;
+    try {
+      const ctl = new AbortController();
+      const timer = setTimeout(() => ctl.abort(), 1600);
+      const headers = {};
+      if (DATA.exec_token) headers['X-DCA-Token'] = DATA.exec_token;
+      const r = await fetch(b + '/api/ping', {signal: ctl.signal, cache: 'no-store', headers});
+      clearTimeout(timer);
+      if (!r.ok) continue;
+      const j = await r.json();
+      if (j && j.ok){
+        reachable = true;
+        if (j.write_ok){ EXEC.api = b; EXEC.mode = 'live'; EXEC.reason = ''; renderExecStatus(); return; }
+      }
+    } catch(e){ /* 继续尝试下一个地址 */ }
+  }
+  EXEC.mode = 'copy';
+  EXEC.reason = reachable ? 'origin' : '';
+  renderExecStatus();
+}
+
+let _toastTimer = null;
+function showToast(msg, isErr){
+  const el = document.getElementById('toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'toast show' + (isErr ? ' err' : '');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => { el.className = 'toast' + (isErr ? ' err' : ''); }, 5200);
+}
+
+function initToast(){
+  try {
+    const h = location.hash || '';
+    if (h.indexOf('#saved=') === 0){
+      const msg = decodeURIComponent(h.slice(7));
+      try { history.replaceState(null, '', location.pathname + location.search); } catch(e){}
+      if (msg) setTimeout(() => showToast(msg, false), 120);
+    }
+  } catch(e){ /* ignore */ }
+}
+
+render();
+initToast();
+initExec();
+</script>
+</body>
+</html>

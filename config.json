@@ -1,0 +1,130 @@
+{
+  "portfolio": {
+    "total_monthly_aud": 2500,
+    "weights": {
+      "VOO": 0.75,
+      "SMH": 0.2,
+      "TSLA": 0.05
+    },
+    "start_month": "2026-11",
+    "note": "total_monthly_aud 是每月 AUD 预算；weights 是长期目标权重。预算变更从当前月起生效，不追溯历史欠额。"
+  },
+  "currency": {
+    "budget": "AUD",
+    "quote": "USD",
+    "display": "both"
+  },
+  "fx": {
+    "symbol": "AUDUSD=X",
+    "fallback_rate": 0.65,
+    "ttl_hours": 6,
+    "max_stale_hours": 72,
+    "note": "1 AUD = X USD；过期只展示估算，确认成交必须提供实际汇率/美元金额。"
+  },
+  "decision": {
+    "monthly_obligation": true,
+    "score_role": "timing",
+    "miss_policy": "carry_over",
+    "max_catchup_per_order_months": 3,
+    "max_catchup_aud": 0,
+    "allow_split": false,
+    "note": "硬约束默认开启；欠额永久保留，只有显式 --write-off 才核销。"
+  },
+  "commission": {
+    "per_order_usd": 1.0,
+    "per_share_usd": 0.0,
+    "max_pct": 0.35,
+    "max_batch_months": 6,
+    "policy": "pay",
+    "fee_mode": "per_order",
+    "note": "policy=pay 时每月照投（默认）；batch 为可选合并。"
+  },
+  "symbols": {
+    "VOO": {
+      "name": "标普500 ETF (Vanguard)",
+      "style": "index",
+      "asset_class": "etf"
+    },
+    "SMH": {
+      "name": "半导体 ETF (VanEck)",
+      "style": "cyclical",
+      "asset_class": "etf"
+    },
+    "TSLA": {
+      "name": "特斯拉 (Tesla)",
+      "style": "hyper",
+      "asset_class": "stocks"
+    }
+  },
+  "styles": {
+    "index": {
+      "label": "核心 · 宽基指数",
+      "buy": 42,
+      "partial": 26,
+      "window": "early",
+      "early_days": 1,
+      "why": "核心仓每月必须完成：第 1 个交易日买入，不做月内择时。"
+    },
+    "cyclical": {
+      "label": "卫星 · 周期行业",
+      "buy": 50,
+      "partial": 38,
+      "window": "early",
+      "early_days": 1,
+      "why": "评分只做展示：T+1 回测未跑赢固定第 1 日；如想保留 3 日辅助窗口，把 early_days 改回 3。"
+    },
+    "hyper": {
+      "label": "卫星 · 高波动成长",
+      "buy": 50,
+      "partial": 42,
+      "window": "early",
+      "early_days": 1,
+      "why": "评分只做展示：T+1 回测未跑赢固定第 1 日；如想保留 3 日辅助窗口，把 early_days 改回 3。"
+    }
+  },
+  "score_weights": {
+    "s52": 0.2,
+    "s60": 0.2,
+    "sz20": 0.2,
+    "srsi": 0.15,
+    "sdd": 0.15,
+    "svix": 0.1
+  },
+  "vix": {
+    "symbol": "^VIX",
+    "good": 15,
+    "bad": 30
+  },
+  "timezone": {
+    "market": "America/New_York",
+    "local": "Australia/Melbourne"
+  },
+  "sessions": {
+    "open": {
+      "et": "09:35",
+      "label": "开盘后扫描"
+    },
+    "midday": {
+      "et": "12:30",
+      "label": "午盘扫描"
+    },
+    "close": {
+      "et": "15:50",
+      "label": "收盘前扫描"
+    }
+  },
+  "backtest": {
+    "signal": "close",
+    "fill": "next_open",
+    "slippage_bps": 0,
+    "funding": "first_trading_day",
+    "cash_yield_annual": 0,
+    "sensitivity_aud": [
+      2000,
+      2500,
+      3000
+    ]
+  },
+  "reports_dir": "reports",
+  "data_dir": "data"
+}
